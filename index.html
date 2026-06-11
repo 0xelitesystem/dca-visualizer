@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DCA Visualizer</title>
+<meta name="description" content="Compare deploying capital all at once versus dollar-cost averaging it over time across a chosen price path. Runs in the browser. Not financial advice.">
+<meta property="og:title" content="DCA Visualizer">
+<meta property="og:description" content="Lump sum versus dollar-cost averaging, side by side, over a price path you control. Not financial advice.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #e8eef2;
+    --grid: rgba(20, 60, 90, 0.10);
+    --grid-strong: rgba(20, 60, 90, 0.20);
+    --ink: #0f2a3d;
+    --ink-soft: #45637a;
+    --line-blue: #1763a6;
+    --cyan: #0a9bb5;
+    --amber: #d97a14;
+    --carmine: #b22f3a;
+    --panel: #f3f7fa;
+    --panel-edge: #b9cdd9;
+    --shadow: rgba(15, 42, 61, 0.12);
+  }
+  [data-theme="dark"] {
+    --paper: #0c1a24;
+    --grid: rgba(120, 190, 230, 0.08);
+    --grid-strong: rgba(120, 190, 230, 0.16);
+    --ink: #d6e6f0;
+    --ink-soft: #8aa6b8;
+    --line-blue: #4aa3e0;
+    --cyan: #2fc6dd;
+    --amber: #f1a73e;
+    --carmine: #e26470;
+    --panel: #102633;
+    --panel-edge: #20465c;
+    --shadow: rgba(0, 0, 0, 0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "IBM Plex Sans", sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      linear-gradient(var(--grid-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 4px;
+  }
+  .titleblock h1 {
+    font-family: "Saira Condensed", sans-serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 52px);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+  .titleblock .sub {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .theme-toggle {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .theme-toggle:hover { border-color: var(--ink); }
+  .disclaimer {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--carmine);
+    border: 1.5px solid var(--carmine);
+    padding: 8px 12px;
+    margin: 16px 0 24px;
+    text-transform: uppercase;
+    background: var(--panel);
+  }
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 22px; align-items: start; }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } }
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    box-shadow: 4px 4px 0 var(--shadow);
+    padding: 18px;
+  }
+  .controls h2, .chartcard h2, .results h2 {
+    font-family: "Saira Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--panel-edge);
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .field input[type="number"] {
+    width: 100%;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 9px 10px;
+  }
+  .field input:focus { outline: 2px solid var(--cyan); outline-offset: -1px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .seg button {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 9px 6px;
+    border: 1px solid var(--panel-edge);
+    background: var(--paper);
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .seg button.active { background: var(--line-blue); color: #fff; border-color: var(--line-blue); }
+  .chartcard {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    box-shadow: 4px 4px 0 var(--shadow);
+    padding: 18px;
+    margin-bottom: 22px;
+  }
+  svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 16px; height: 3px; display: inline-block; }
+  .results { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 560px) { .results { grid-template-columns: 1fr; } }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    box-shadow: 4px 4px 0 var(--shadow);
+    padding: 16px 18px;
+  }
+  .stat .k { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+  .stat .v { font-family: "Saira Condensed", sans-serif; font-weight: 700; font-size: 34px; letter-spacing: 0.02em; margin-top: 4px; }
+  .stat .note { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+  .verdict { grid-column: 1 / -1; border-top: 3px solid var(--ink); padding-top: 14px; font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  .verdict b { color: var(--amber); }
+  footer {
+    margin-top: 40px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 16px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    line-height: 1.7;
+  }
+  footer a { color: var(--line-blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="titleblock">
+      <h1>DCA Visualizer</h1>
+      <div class="sub">Lump sum vs spread, on a path you set</div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button">Dark</button>
+  </header>
+
+  <div class="disclaimer">Not financial advice. Illustrative deterministic paths only. Real markets do not follow these curves.</div>
+
+  <div class="layout">
+    <section class="controls" aria-label="Inputs">
+      <h2>Inputs</h2>
+      <div class="field">
+        <label for="capital">Total capital to deploy ($)</label>
+        <input type="number" id="capital" value="12000" min="1" step="100">
+      </div>
+      <div class="field">
+        <label for="months">Spread DCA over (months)</label>
+        <input type="number" id="months" value="12" min="2" max="120" step="1">
+      </div>
+      <div class="field">
+        <label for="price">Starting unit price ($)</label>
+        <input type="number" id="price" value="100" min="0.01" step="1">
+      </div>
+      <div class="field">
+        <label for="drift">Annual drift (%)</label>
+        <input type="number" id="drift" value="8" step="1">
+      </div>
+      <div class="field">
+        <label for="cash">Cash yield while waiting (% annual)</label>
+        <input type="number" id="cash" value="4" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label>Path shape</label>
+        <div class="seg" id="shapeSeg">
+          <button type="button" data-shape="climb" class="active">Steady climb</button>
+          <button type="button" data-shape="dip">Early dip</button>
+          <button type="button" data-shape="pullback">Late pullback</button>
+          <button type="button" data-shape="choppy">Choppy sideways</button>
+        </div>
+      </div>
+    </section>
+
+    <div>
+      <section class="chartcard">
+        <h2>Price path and accumulated value</h2>
+        <svg id="chart" viewBox="0 0 680 360" role="img" aria-label="Price path with lump sum and DCA value curves"></svg>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--ink-soft)"></i> Unit price</span>
+          <span><i class="swatch" style="background:var(--line-blue)"></i> Lump sum value</span>
+          <span><i class="swatch" style="background:var(--amber)"></i> DCA value</span>
+          <span><i class="swatch" style="background:var(--cyan)"></i> DCA buy</span>
+        </div>
+      </section>
+
+      <section class="results" aria-label="Results">
+        <h2 style="grid-column:1 / -1">Outcome at end of window</h2>
+        <div class="stat">
+          <div class="k">Lump sum final value</div>
+          <div class="v" id="lumpVal">$0</div>
+          <div class="note" id="lumpNote"></div>
+        </div>
+        <div class="stat">
+          <div class="k">DCA final value</div>
+          <div class="v" id="dcaVal">$0</div>
+          <div class="note" id="dcaNote"></div>
+        </div>
+        <div class="verdict" id="verdict"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <div>DCA VISUALIZER &middot; runs entirely in your browser &middot; no data leaves the page &middot; no tracking</div>
+    <div>Part of the 0xelitesystem tool set. See also: position-sizing-calculator, breakeven-runway-calculator.</div>
+    <div>MIT licensed. Copyright 0xelitesystem 2026. Educational tool, not investment advice.</div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var state = { shape: "climb" };
+
+  function $(id) { return document.getElementById(id); }
+  function num(id) { return parseFloat($(id).value); }
+
+  function money(x) {
+    if (!isFinite(x)) { return "$0"; }
+    return "$" + Math.round(x).toLocaleString("en-US");
+  }
+
+  function shapeFactor(t, shape) {
+    if (shape === "dip") { return 1 - 0.30 * Math.exp(-Math.pow((t - 0.18), 2) / 0.012); }
+    if (shape === "pullback") { return 1 - 0.32 * Math.max(0, (t - 0.6)) / 0.4; }
+    if (shape === "choppy") { return 1 + 0.07 * Math.sin(t * 18) - 0.02 * t; }
+    return 1;
+  }
+
+  function compute() {
+    var capital = num("capital");
+    var months = Math.round(num("months"));
+    var p0 = num("price");
+    var drift = num("drift") / 100;
+    var cashAnnual = num("cash") / 100;
+
+    if (!(capital > 0) || !(months >= 2) || !(p0 > 0)) { return null; }
+    if (months > 120) { months = 120; }
+
+    var mDrift = Math.pow(1 + drift, 1 / 12) - 1;
+    var mCash = Math.pow(1 + cashAnnual, 1 / 12) - 1;
+
+    var prices = [];
+    var i;
+    for (i = 0; i <= months; i++) {
+      var t = i / months;
+      var base = p0 * Math.pow(1 + mDrift, i);
+      prices.push(base * shapeFactor(t, state.shape));
+    }
+
+    var lumpShares = capital / prices[0];
+    var lumpCurve = [];
+    for (i = 0; i <= months; i++) { lumpCurve.push(lumpShares * prices[i]); }
+
+    var tranche = capital / months;
+    var cash = capital;
+    var dcaShares = 0;
+    var dcaCurve = [];
+    var buys = [];
+    for (i = 0; i <= months; i++) {
+      if (i > 0) { cash = cash * (1 + mCash); }
+      if (i < months) {
+        var spend = Math.min(tranche, cash);
+        dcaShares += spend / prices[i];
+        cash -= spend;
+        buys.push({ i: i, price: prices[i] });
+      }
+      dcaCurve.push(dcaShares * prices[i] + cash);
+    }
+
+    var lumpFinal = lumpCurve[months];
+    var dcaFinal = dcaCurve[months];
+
+    return {
+      months: months, prices: prices,
+      lumpCurve: lumpCurve, dcaCurve: dcaCurve, buys: buys,
+      lumpFinal: lumpFinal, dcaFinal: dcaFinal,
+      lumpShares: lumpShares, dcaShares: dcaShares,
+      capital: capital
+    };
+  }
+
+  function render(r) {
+    if (!r) { return; }
+
+    $("lumpVal").textContent = money(r.lumpFinal);
+    $("dcaVal").textContent = money(r.dcaFinal);
+    $("lumpNote").textContent = r.lumpShares.toFixed(2) + " units, all bought at month 0";
+    $("dcaNote").textContent = r.dcaShares.toFixed(2) + " units, bought across " + r.months + " months";
+
+    var diff = r.lumpFinal - r.dcaFinal;
+    var pct = (diff / r.dcaFinal) * 100;
+    var v = $("verdict");
+    if (Math.abs(pct) < 0.05) {
+      v.innerHTML = "On this path the two finish even.";
+    } else if (diff > 0) {
+      v.innerHTML = "On this path, <b>lump sum</b> ends " + money(Math.abs(diff)) + " ahead (" + Math.abs(pct).toFixed(1) + "%). It put every unit to work on day one while the price climbed.";
+    } else {
+      v.innerHTML = "On this path, <b>DCA</b> ends " + money(Math.abs(diff)) + " ahead (" + Math.abs(pct).toFixed(1) + "%). Spreading the buys caught lower prices the lump sum missed.";
+    }
+
+    drawChart(r);
+  }
+
+  function drawChart(r) {
+    var W = 680, H = 360, padL = 56, padR = 16, padT = 16, padB = 34;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var n = r.months;
+
+    var maxVal = 0, maxPrice = 0, k;
+    for (k = 0; k <= n; k++) {
+      if (r.lumpCurve[k] > maxVal) { maxVal = r.lumpCurve[k]; }
+      if (r.dcaCurve[k] > maxVal) { maxVal = r.dcaCurve[k]; }
+      if (r.prices[k] > maxPrice) { maxPrice = r.prices[k]; }
+    }
+    maxVal = maxVal * 1.08;
+    maxPrice = maxPrice * 1.12;
+
+    function x(i) { return padL + (i / n) * plotW; }
+    function yVal(v) { return padT + plotH - (v / maxVal) * plotH; }
+    function yPrice(p) { return padT + plotH - (p / maxPrice) * plotH; }
+
+    function path(curve, mapY) {
+      var d = "", j;
+      for (j = 0; j <= n; j++) { d += (j === 0 ? "M" : "L") + x(j).toFixed(1) + " " + mapY(curve[j]).toFixed(1) + " "; }
+      return d.trim();
+    }
+
+    var parts = [];
+    var gy;
+    for (gy = 0; gy <= 4; gy++) {
+      var yy = padT + (gy / 4) * plotH;
+      parts.push('<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="var(--grid-strong)" stroke-width="1"/>');
+      var lab = money(maxVal * (1 - gy / 4));
+      parts.push('<text x="' + (padL - 8) + '" y="' + (yy + 4).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--ink-soft)">' + lab + '</text>');
+    }
+
+    parts.push('<path d="' + path(r.prices, yPrice) + '" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="4 3"/>');
+    parts.push('<path d="' + path(r.lumpCurve, yVal) + '" fill="none" stroke="var(--line-blue)" stroke-width="2.5"/>');
+    parts.push('<path d="' + path(r.dcaCurve, yVal) + '" fill="none" stroke="var(--amber)" stroke-width="2.5"/>');
+
+    var b;
+    for (b = 0; b < r.buys.length; b++) {
+      var bi = r.buys[b].i;
+      parts.push('<circle cx="' + x(bi).toFixed(1) + '" cy="' + yPrice(r.buys[b].price).toFixed(1) + '" r="2.6" fill="var(--cyan)"/>');
+    }
+
+    parts.push('<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="var(--ink)" stroke-width="1.5"/>');
+    parts.push('<text x="' + padL + '" y="' + (H - 8) + '" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--ink-soft)">month 0</text>');
+    parts.push('<text x="' + (W - padR) + '" y="' + (H - 8) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--ink-soft)">month ' + n + '</text>');
+
+    $("chart").innerHTML = parts.join("");
+  }
+
+  function recompute() { render(compute()); }
+
+  function bind() {
+    var inputs = ["capital", "months", "price", "drift", "cash"];
+    var z;
+    for (z = 0; z < inputs.length; z++) { $(inputs[z]).addEventListener("input", recompute); }
+
+    var segBtns = document.querySelectorAll("#shapeSeg button");
+    var q;
+    for (q = 0; q < segBtns.length; q++) {
+      segBtns[q].addEventListener("click", function (e) {
+        var btns = document.querySelectorAll("#shapeSeg button");
+        var w;
+        for (w = 0; w < btns.length; w++) { btns[w].classList.remove("active"); }
+        e.currentTarget.classList.add("active");
+        state.shape = e.currentTarget.getAttribute("data-shape");
+        recompute();
+      });
+    }
+
+    var t = $("themeToggle");
+    t.addEventListener("click", function () {
+      var dark = document.documentElement.getAttribute("data-theme") === "dark";
+      document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+      t.textContent = dark ? "Dark" : "Light";
+    });
+
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.documentElement.setAttribute("data-theme", "dark");
+      t.textContent = "Light";
+    }
+  }
+
+  bind();
+  recompute();
+})();
+</script>
+</body>
+</html>
