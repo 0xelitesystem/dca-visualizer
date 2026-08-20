@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -195,6 +195,27 @@
 </style>
 <link rel="canonical" href="https://0xelitesystem.github.io/dca-visualizer/">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"DCA Visualizer","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://0xelitesystem.github.io/dca-visualizer/","author":{"@type":"Person","name":"0xelitesystem","url":"https://elitesystem.ai"}}</script>
+<style>
+/* elitesystem brand tokens: chrome only, meaning preserved */
+:root, :root[data-theme="dark"] {
+  --amber: #ffb454;
+  --grid: #1f1f1d;
+  --ink: #e8e8e3;
+  --ink-soft: #a8a8a3;
+  --panel: #111110;
+  --paper: #0a0a0a;
+}
+:root[data-theme="light"] {
+  --amber: #a05a00;
+  --grid: #c8cdd5;
+  --ink: #0a0a0a;
+  --ink-soft: #2a2a27;
+  --panel: #dee2e8;
+  --paper: #e8ebef;
+}
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+</style>
 </head>
 <body>
 <div class="wrap">
