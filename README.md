@@ -12,7 +12,7 @@ The DCA Visualizer answers one question: given a chosen price path, would lump-s
 
 Lump sum buys every unit at the month-0 price. Dollar-cost averaging splits the capital into equal monthly tranches, buys at each month's price, and earns an optional cash yield on the balance still waiting to be deployed.
 
-## How to use it
+## Use
 
 1. Open `index.html` in any modern browser, or visit the GitHub Pages site.
 2. Enter total capital, the number of months to spread over, the starting unit price, an annual drift, and a cash yield for idle funds.
@@ -36,9 +36,28 @@ Outputs are the lump-sum final value, the DCA final value, units acquired by eac
 
 The path is `startingPrice * (1 + monthlyDrift)^month`, multiplied by a deterministic shape factor. DCA invests `capital / months` each month at that month's price, with idle cash compounding at the monthly cash rate. Final value is measured at the end of the deployment window. There are no fees, taxes, or dividends. The model is intentionally simple so the lump-versus-DCA mechanic is visible rather than buried.
 
+## Why this exists
+
+Lump sum versus dollar-cost averaging is usually argued in the abstract. This tool makes the mechanic visible on a price path you control, so you can see which path shapes favour which strategy and by how much. It is a single HTML file with no tracking and no network calls, and it is MIT licensed.
+
 ## Privacy
 
 Runs fully client side. No analytics, no network calls, no storage. View source to confirm.
+
+One exception to "no storage": the page saves your light or dark theme choice, written to `localStorage` under the key `theme` when you press the theme toggle. Your inputs are not stored. Clearing site data removes the theme choice.
+
+## Run locally
+
+```
+git clone https://github.com/0xelitesystem/dca-visualizer
+cd dca-visualizer
+```
+
+Then open `index.html` in any modern browser, or serve the folder with `python -m http.server` and visit http://localhost:8000/.
+
+## Build
+
+No build step. The whole tool is one `index.html` file with inline CSS and JavaScript, and there is nothing to install or compile.
 
 ## Related tools
 
