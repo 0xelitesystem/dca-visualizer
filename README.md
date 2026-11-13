@@ -71,4 +71,4 @@ Part of a catalog of single-file browser tools and plain-language references, al
 
 ## License
 
-MIT. Copyright 0xelitesystem 2026.
+MIT. Copyright RBL Industries LLC 2026.
